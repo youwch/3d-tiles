@@ -45,7 +45,7 @@
 * [介绍](#介绍)
 * [文件扩展与MIME类型](#文件扩展与MIME类型)
 * [JSON编码](#JSON编码)
-* [统一资源标识符 URIs](#统一资源标识符 uris)
+* [统一资源标识符URIs](#统一资源标识符uris)
 * [单元 Units](#单元 units)
 * [相关概念](#相关概念)
   * [坐标参考系(CRS)](#坐标参考系(CRS))
@@ -124,7 +124,7 @@ Explicit file extensions are optional. Valid implementations may ignore it and i
   2. All strings defined in this spec (properties names, enums) use only ASCII charset and must be written as plain text.
   3. Names (keys) within JSON objects must be unique, i.e., duplicate keys aren't allowed.
 
-## 统一资源标识符 URIs
+## 统一资源标识符URIs
 
 3D Tiles uses URIs to reference tile content. These URIs may point to [relative external references (RFC3986)](https://tools.ietf.org/html/rfc3986#section-4.2) or be data URIs that embed resources in the JSON. Embedded resources use [the "data" URI scheme (RFC2397)](https://tools.ietf.org/html/rfc2397).
 
