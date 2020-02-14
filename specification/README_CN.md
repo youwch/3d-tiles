@@ -46,7 +46,7 @@
 * [文件扩展与MIME类型](#文件扩展与MIME类型)
 * [JSON编码](#JSON编码)
 * [统一资源标识符URIs](#统一资源标识符uris)
-* [单元 Units](#单元 units)
+* [单元Units](#单元Units)
 * [相关概念](#相关概念)
   * [坐标参考系(CRS)](#坐标参考系(CRS))
   * [瓦片](#瓦片)
@@ -132,7 +132,7 @@ When the URI is relative, its base is always relative to the referring tileset J
 
 Client implementations are required to support relative external references and embedded resources. Optionally, client implementations may support other schemes (such as `http://`). All URIs must be valid and resolvable.
 
-## 单元 Units
+## 单元Units
 
 The unit for all linear distances is meters.
 
