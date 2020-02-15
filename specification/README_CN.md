@@ -43,10 +43,10 @@
 ## 目录
 
 * [介绍](#介绍)
-* [文件扩展与MIME类型](#文件扩展与MIME类型)
+* [文件扩展名与MIME类型](#文件扩展名与MIME类型)
 * [JSON编码](#JSON编码)
 * [统一资源标识符URIs](#统一资源标识符uris)
-* [单元Units](#单元Units)
+* [单位Units](#单位Units)
 * [相关概念](#相关概念)
   * [坐标参考系(CRS)](#坐标参考系(CRS))
   * [瓦片](#瓦片)
@@ -81,72 +81,76 @@
 
 ## 介绍
 
-3D Tiles is designed for streaming and rendering massive 3D geospatial content such as Photogrammetry, 3D Buildings, BIM/CAD, Instanced Features, and Point Clouds. It defines a hierarchical data structure and a set of tile formats which deliver renderable content. 3D Tiles does not define explicit rules for visualization of the content; a client may visualize 3D Tiles data however it sees fit.
+3D Tiles为流式传输和渲染海量三维空间数据内容而设计，包括影像数据、三维建筑模型、BIM/CAD数据、要素实例和点云数据。它定义了用来传送可渲染内容的分级数据结构和一套瓦片格式。但是它并不清楚地定义数据内容可视化的规则，客户端可以用自己适当的方式来可视化三维瓦片数据。
 
-In 3D Tiles, a _tileset_ is a set of _tiles_ organized in a spatial data structure, the _tree_. A tileset is described by at least one tileset JSON file containing tileset metadata and a tree of tile objects, each of which may reference renderable content of one of the following formats:
+在3D Tiles中，_tileset_由一系列树状结构的_tiles_组成。至少由一个包含tileset元数据和tile对象树状结构的的JSON文件作为的tileset描述，其中每个tile对象都是以下可渲染的数据内容之一：
 
-Format|Uses
+格式|应用
 ---|---
-[Batched 3D Model (`b3dm`)](./TileFormats/Batched3DModel/README.md)|Heterogeneous 3D models. E.g. textured terrain and surfaces, 3D building exteriors and interiors, massive models.
-[Instanced 3D Model (`i3dm`)](./TileFormats/Instanced3DModel/README.md)|3D model instances. E.g. trees, windmills, bolts.
-[Point Cloud (`pnts`)](./TileFormats/PointCloud/README.md)|Massive number of points.
-[Composite (`cmpt`)](./TileFormats/Composite/README.md)|Concatenate tiles of different formats into one tile.
+[Batched 3D Model (`b3dm`)](./TileFormats/Batched3DModel/README.md)|多种3D模型，例如贴纹理的地形和表面、三维建筑的外观和内部、大量的模型。
+[Instanced 3D Model (`i3dm`)](./TileFormats/Instanced3DModel/README.md)|三维模型实例，例如树木、风车、插销。
+[Point Cloud (`pnts`)](./TileFormats/PointCloud/README.md)|海量点组成的数据.
+[Composite (`cmpt`)](./TileFormats/Composite/README.md)|不同格式的瓦片拼接成一个瓦片。
 
-A tile's _content_, an individual instance of a tile format, is a binary blob with format-specific components including a [Feature Table](./TileFormats/FeatureTable/README.md) and a [Batch Table](./TileFormats/BatchTable/README.md).
+不同格式的tile具有不同的content实例，_content_是包含[Feature Table](./TileFormats/FeatureTable/README.md) 和[Batch Table](./TileFormats/BatchTable/README.md)的二进制对象。
 
-The content references a set of _features_, such as 3D models representing buildings or trees, or points in a point cloud. Each feature has position and appearance properties stored in the tile's Feature Table, and additional application-specific properties stored in the Batch Table. A client may choose to select features at runtime and retrieve their properties for visualization or analysis.
+content指明一系列_features_，例如建筑或树木的三维模型、点云数据中的点。每个feature在Feature Table里都存有位置信息和外观属性，并且在Batch Table存储有application-specific属性属性。客户端可以在运行环境中选择要素并获取他们的属性用来做可视化和分析。
 
-The Batched 3D Model and Instanced 3D Model formats are built on [glTF](https://github.com/KhronosGroup/glTF), an open specification designed for the efficient transmission of 3D content. The tile content of these formats embed a glTF asset, which contains model geometry and texture information, in the binary body. The Point Cloud format does not embed glTF.
+Batched 3D Model和Instanced 3D Model格式基于 [glTF](https://github.com/KhronosGroup/glTF), glTF是设计用来高效传递三维数据内容的开放规范。这两种格式的瓦片内容嵌入了glTF，在二进制体中包含模型几何结构和纹理信息。点云格式并未嵌入。
 
-Tiles are organized in a tree which incorporates the concept of Hierarchical Level of Detail (HLOD) for optimal rendering of spatial data. Each tile has a _bounding volume_, an object defining a spatial extent completely enclosing its content. The tree has [spatial coherence](#bounding-volume-spatial-coherence); the content for child tiles are completely inside the parent's bounding volume.
+树状结构组织的瓦片包含多层级细节（HLOD），用于空间数据的最佳渲染。每个tile都有_bounding volume_，bounding volume对象定义了完全包裹tile的最小空间范围。tree拥有 [spatial coherence](#bounding-volume-spatial-coherence)；子瓦片的数据内容完全包含在父bounding volume中。
+
 
 ![](figures/tree.png)
 
-A tileset may use a 2D spatial tiling scheme similar to raster and vector tiling schemes (like a Web Map Tile Service (WMTS) or XYZ scheme) that serve predefined tiles at several levels of detail (or zoom levels). However since the content of a tileset is often non-uniform or may not easily be organized in only two dimensions, the tree can be any [spatial data structure](#spatial-data-structures) with spatial coherence, including k-d trees, quadtrees, octrees, and grids.
 
-Optionally a [3D Tiles Style](./Styling/), or _style_, may be applied to a tileset. A style defines expressions to be evaluated which modify how each feature is displayed.
+tileset可以使用类似于栅格和矢量瓦片的瓦片结构（如Web Map Tile Service (WMTS) 或 XYZ结构）在不同级别中提供预先定义的瓦片。由于tileset的数据内容通常在二维中并不统一或难以组织，树状结构一般是具有空间连续性的 [spatial data structure](#spatial-data-structures) ，包括k-d树、四叉树、八叉树和网格。
 
-## 文件扩展与MIME类型
+tileset可以选择使用 [3D Tiles Style](./Styling/), 或 _style_ 。style定义了每个feature在评价修饰时如何被展现。
 
-3D Tiles uses the following file extensions and MIME types.
 
-* Tileset files use the `.json` extension and the `application/json` MIME type.
-* Tile content files use the file type and MIME format specific to their [tile format specification](#tile-format-specifications).
-* Tileset style files use the `.json` extension and the `application/json` MIME type.
+## 文件扩展名与MIME类型
 
-Explicit file extensions are optional. Valid implementations may ignore it and identify a content's format by the `magic` field in its header.
+3D Tiles 应用了如下文件扩展名和 MIME 类型.
+
+* Tileset 文件使用 `.json` 扩展名和 `application/json` MIME 类型.
+* Tile content 文件使用的文件类型和 MIME 格式请参考 [tile format specification](#tile-format-specifications).
+* Tileset style 文件使用 `.json` 扩展名和 `application/json` MIME 类型.
+
+明确的的文件扩展名是可选择性的. 有效的实现可能会忽略扩展名并且由文件头中的`magic`字段定义内容的格式。
 
 ## JSON编码
 
-3D Tiles has the following restrictions on JSON formatting and encoding.
+3D Tiles 的JSON格式和编码有以下限制.
 
-  1. JSON must use UTF-8 encoding without BOM.
-  2. All strings defined in this spec (properties names, enums) use only ASCII charset and must be written as plain text.
-  3. Names (keys) within JSON objects must be unique, i.e., duplicate keys aren't allowed.
+  1. JSON 必须使用没有BOM的 UTF-8 编码.
+  2. 包括属性名称、枚举在内的所有字符串只能使用ASCII字符并且必须是纯文本。
+  3. 名称（键）Names (keys) 在JSON都必须唯一，不允许出行重复的键。
 
 ## 统一资源标识符URIs
 
-3D Tiles uses URIs to reference tile content. These URIs may point to [relative external references (RFC3986)](https://tools.ietf.org/html/rfc3986#section-4.2) or be data URIs that embed resources in the JSON. Embedded resources use [the "data" URI scheme (RFC2397)](https://tools.ietf.org/html/rfc2397).
+3D Tiles使用URIs来指明tile的数据内容。URIs可能是相关的外部路径 [relative external references (RFC3986)] 或是JSON中嵌入的数据URIs。嵌入的资源使用数据URI结构 [the "data" URI scheme (RFC2397)](https://tools.ietf.org/html/rfc2397)。
 
-When the URI is relative, its base is always relative to the referring tileset JSON file.
+如果URI是相对路径，则是相对于指向的tileset的JSON文件而言。
 
-Client implementations are required to support relative external references and embedded resources. Optionally, client implementations may support other schemes (such as `http://`). All URIs must be valid and resolvable.
+客户端在实现时要求支持相关的外部路径和嵌入资源，客户端也可以支持其他的数据结构（如`http://`）。所有的URIs都必须是合法且可解析的。
 
-## 单元Units
+## 单位Units
 
-The unit for all linear distances is meters.
+所有直线距离的单位Unit是米。
 
-All angles are in radians.
+所有的角度都以弧度表示。
 
 ## 相关概念
 
 ### 坐标参考系(CRS)
 
-3D Tiles uses a right-handed Cartesian coordinate system; that is, the cross product of _x_ and _y_ yields _z_. 3D Tiles defines the _z_ axis as up for local Cartesian coordinate systems. A tileset's global coordinate system will often be in a [WGS 84](http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf) earth-centered, earth-fixed (ECEF) reference frame ([EPSG 4978](http://spatialreference.org/ref/epsg/4978/)), but it doesn't have to be, e.g., a power plant may be defined fully in its local coordinate system for use with a modeling tool without a geospatial context.
+3D Tiles 使用右手笛卡尔坐标系; 与 _x_ 和 _y_ 相交得到 _z_. 3D Tiles 在本地笛卡尔坐标系之上定义_z_轴。 tileset的全球坐标系一般是 [WGS 84](http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf) 地固地心坐标系 (ECEF) 参考框架 ([EPSG 4978](http://spatialreference.org/ref/epsg/4978/)), 但是也必不完全使用这一坐标系，比如应用于通过建模工具得到的具有本地坐标系却没有地理空间信息的的大型电厂模型。
 
 An additional [tile transform](#tile-transforms) may be applied to transform a tile's local coordinate system to the parent tile's coordinate system.
+瓦片转换 [tile transform](#tile-transforms)可以用于将本地瓦片坐标系转为父级瓦片坐标系。
 
-The [region](#region) bounding volume specifies bounds using a geographic coordinate system (latitude, longitude, height), specifically [EPSG 4979](http://spatialreference.org/ref/epsg/4979/).
+ [region](#region) bounding volume使用地理坐标系（包括纬度、经度、高度），特别是[EPSG 4979](http://spatialreference.org/ref/epsg/4979/)。
 
 ### 瓦片
 
